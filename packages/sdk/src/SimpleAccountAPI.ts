@@ -27,7 +27,8 @@ export interface SimpleAccountApiParams extends BaseApiParams {
  * - contract deployer gets "entrypoint", "owner" addresses and "index" nonce
  * - owner signs requests using normal "Ethereum Signed Message" (ether's signer.signMessage())
  * - nonce method is "nonce()"
- * - execute method is "execFromEntryPoint()"
+ * - execute method is "execute()"
+ * - execute batch method is "executeBatch()"
  */
 export class SimpleAccountAPI extends BaseAccountAPI {
   factoryAddress?: string
@@ -36,7 +37,7 @@ export class SimpleAccountAPI extends BaseAccountAPI {
 
   /**
    * our account contract.
-   * should support the "execFromEntryPoint" and "nonce" methods
+   * should support the "execute", "executeBatch" and "nonce" methods
    */
   accountContract?: SimpleAccount
 
@@ -96,6 +97,16 @@ export class SimpleAccountAPI extends BaseAccountAPI {
         target,
         value,
         data
+      ])
+  }
+
+  async encodeBatch (targets: string[], datas: string[]): Promise<string> {
+    const accountContract = await this._getAccountContract()
+    return accountContract.interface.encodeFunctionData(
+      'executeBatch',
+      [
+        targets,
+        datas
       ])
   }
 

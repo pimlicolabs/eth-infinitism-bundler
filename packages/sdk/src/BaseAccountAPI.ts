@@ -53,7 +53,7 @@ export abstract class BaseAccountAPI {
    * base constructor.
    * subclass SHOULD add parameters that define the owner (signer) of this wallet
    */
-  protected constructor (params: BaseApiParams) {
+  protected constructor(params: BaseApiParams) {
     this.provider = params.provider
     this.overheads = params.overheads
     this.entryPointAddress = params.entryPointAddress
@@ -64,7 +64,7 @@ export abstract class BaseAccountAPI {
     this.entryPointView = EntryPoint__factory.connect(params.entryPointAddress, params.provider).connect(ethers.constants.AddressZero)
   }
 
-  async init (): Promise<this> {
+  async init(): Promise<this> {
     if (await this.provider.getCode(this.entryPointAddress) === '0x') {
       throw new Error(`entryPoint not deployed at ${this.entryPointAddress}`)
     }
@@ -77,12 +77,12 @@ export abstract class BaseAccountAPI {
    * return the value to put into the "initCode" field, if the contract is not yet deployed.
    * this value holds the "factory" address, followed by this account's information
    */
-  abstract getAccountInitCode (): Promise<string>
+  abstract getAccountInitCode(): Promise<string>
 
   /**
    * return current account's nonce.
    */
-  abstract getNonce (): Promise<BigNumber>
+  abstract getNonce(): Promise<BigNumber>
 
   /**
    * encode the call from entryPoint through our account to the target contract.
@@ -90,18 +90,25 @@ export abstract class BaseAccountAPI {
    * @param value
    * @param data
    */
-  abstract encodeExecute (target: string, value: BigNumberish, data: string): Promise<string>
+  abstract encodeExecute(target: string, value: BigNumberish, data: string): Promise<string>
+
+  /**
+   * encode a batch call from entryPoint through our account to the target contracts
+   * @param targets array of targets
+   * @param datas array of data on target contracts
+   */
+  abstract encodeBatch(targets: string[], datas: string[]): Promise<string>
 
   /**
    * sign a userOp's hash (userOpHash).
    * @param userOpHash
    */
-  abstract signUserOpHash (userOpHash: string): Promise<string>
+  abstract signUserOpHash(userOpHash: string): Promise<string>
 
   /**
    * check if the contract is already deployed.
    */
-  async checkAccountPhantom (): Promise<boolean> {
+  async checkAccountPhantom(): Promise<boolean> {
     if (!this.isPhantom) {
       // already deployed. no need to check anymore.
       return this.isPhantom
@@ -119,7 +126,7 @@ export abstract class BaseAccountAPI {
   /**
    * calculate the account address even before it is deployed
    */
-  async getCounterFactualAddress (): Promise<string> {
+  async getCounterFactualAddress(): Promise<string> {
     const initCode = this.getAccountInitCode()
     // use entryPoint to query account address (factory can provide a helper method to do the same, but
     // this method attempts to be generic
@@ -135,7 +142,7 @@ export abstract class BaseAccountAPI {
    * return initCode value to into the UserOp.
    * (either deployment code, or empty hex if contract already deployed)
    */
-  async getInitCode (): Promise<string> {
+  async getInitCode(): Promise<string> {
     if (await this.checkAccountPhantom()) {
       return await this.getAccountInitCode()
     }
@@ -146,7 +153,7 @@ export abstract class BaseAccountAPI {
    * return maximum gas used for verification.
    * NOTE: createUnsignedUserOp will add to this value the cost of creation, if the contract is not yet created.
    */
-  async getVerificationGasLimit (): Promise<BigNumberish> {
+  async getVerificationGasLimit(): Promise<BigNumberish> {
     return 100000
   }
 
@@ -154,7 +161,7 @@ export abstract class BaseAccountAPI {
    * should cover cost of putting calldata on-chain, and some overhead.
    * actual overhead depends on the expected bundle size
    */
-  async getPreVerificationGas (userOp: Partial<UserOperationStruct>): Promise<number> {
+  async getPreVerificationGas(userOp: Partial<UserOperationStruct>): Promise<number> {
     const p = await resolveProperties(userOp)
     return calcPreVerificationGas(p, this.overheads)
   }
@@ -162,18 +169,31 @@ export abstract class BaseAccountAPI {
   /**
    * ABI-encode a user operation. used for calldata cost estimation
    */
-  packUserOp (userOp: NotPromise<UserOperationStruct>): string {
+  packUserOp(userOp: NotPromise<UserOperationStruct>): string {
     return packUserOp(userOp, false)
   }
 
-  async encodeUserOpCallDataAndGasLimit (detailsForUserOp: TransactionDetailsForUserOp): Promise<{ callData: string, callGasLimit: BigNumber }> {
-    function parseNumber (a: any): BigNumber | null {
+  async encodeUserOpCallDataAndGasLimit(detailsForUserOp: TransactionDetailsForUserOp): Promise<{ callData: string, callGasLimit: BigNumber }> {
+    function parseNumber(a: any): BigNumber | null {
       if (a == null || a === '') return null
       return BigNumber.from(a.toString())
     }
 
     const value = parseNumber(detailsForUserOp.value) ?? BigNumber.from(0)
-    const callData = await this.encodeExecute(detailsForUserOp.target, value, detailsForUserOp.data)
+    let callData: string
+    const data = detailsForUserOp.data
+    let target = detailsForUserOp.target
+    if (typeof data === 'string') {
+      if (typeof target !== 'string') {
+        throw new Error('must have target address if data is single value')
+      }
+      callData = await this.encodeExecute(target, value, data)
+    } else {
+      if (typeof target === 'string') {
+        target = Array(data.length).fill(target)
+      }
+      callData = await this.encodeBatch(target, data)
+    }
 
     const callGasLimit = parseNumber(detailsForUserOp.gasLimit) ?? await this.provider.estimateGas({
       from: this.entryPointAddress,
@@ -192,7 +212,7 @@ export abstract class BaseAccountAPI {
    * This value matches entryPoint.getUserOpHash (calculated off-chain, to avoid a view call)
    * @param userOp userOperation, (signature field ignored)
    */
-  async getUserOpHash (userOp: UserOperationStruct): Promise<string> {
+  async getUserOpHash(userOp: UserOperationStruct): Promise<string> {
     const op = await resolveProperties(userOp)
     const chainId = await this.provider.getNetwork().then(net => net.chainId)
     return getUserOpHash(op, this.entryPointAddress, chainId)
@@ -202,7 +222,7 @@ export abstract class BaseAccountAPI {
    * return the account's address.
    * this value is valid even before deploying the contract.
    */
-  async getAccountAddress (): Promise<string> {
+  async getAccountAddress(): Promise<string> {
     if (this.senderAddress == null) {
       if (this.accountAddress != null) {
         this.senderAddress = this.accountAddress
@@ -213,7 +233,7 @@ export abstract class BaseAccountAPI {
     return this.senderAddress
   }
 
-  async estimateCreationGas (initCode?: string): Promise<BigNumberish> {
+  async estimateCreationGas(initCode?: string): Promise<BigNumberish> {
     if (initCode == null || initCode === '0x') return 0
     const deployerAddress = initCode.substring(0, 42)
     const deployerCallData = '0x' + initCode.substring(42)
@@ -226,7 +246,7 @@ export abstract class BaseAccountAPI {
    * - if gas or nonce are missing, read them from the chain (note that we can't fill gaslimit before the account is created)
    * @param info
    */
-  async createUnsignedUserOp (info: TransactionDetailsForUserOp): Promise<UserOperationStruct> {
+  async createUnsignedUserOp(info: TransactionDetailsForUserOp): Promise<UserOperationStruct> {
     const {
       callData,
       callGasLimit
@@ -284,7 +304,7 @@ export abstract class BaseAccountAPI {
    * Sign the filled userOp.
    * @param userOp the UserOperation to sign (with signature field ignored)
    */
-  async signUserOp (userOp: UserOperationStruct): Promise<UserOperationStruct> {
+  async signUserOp(userOp: UserOperationStruct): Promise<UserOperationStruct> {
     const userOpHash = await this.getUserOpHash(userOp)
     const signature = this.signUserOpHash(userOpHash)
     return {
@@ -297,26 +317,7 @@ export abstract class BaseAccountAPI {
    * helper method: create and sign a user operation.
    * @param info transaction details for the userOp
    */
-  async createSignedUserOp (info: TransactionDetailsForUserOp): Promise<UserOperationStruct> {
+  async createSignedUserOp(info: TransactionDetailsForUserOp): Promise<UserOperationStruct> {
     return await this.signUserOp(await this.createUnsignedUserOp(info))
-  }
-
-  /**
-   * get the transaction that has this userOpHash mined, or null if not found
-   * @param userOpHash returned by sendUserOpToBundler (or by getUserOpHash..)
-   * @param timeout stop waiting after this timeout
-   * @param interval time to wait between polls.
-   * @return the transactionHash this userOp was mined, or null if not found.
-   */
-  async getUserOpReceipt (userOpHash: string, timeout = 30000, interval = 5000): Promise<string | null> {
-    const endtime = Date.now() + timeout
-    while (Date.now() < endtime) {
-      const events = await this.entryPointView.queryFilter(this.entryPointView.filters.UserOperationEvent(userOpHash))
-      if (events.length > 0) {
-        return events[0].transactionHash
-      }
-      await new Promise(resolve => setTimeout(resolve, interval))
-    }
-    return null
   }
 }
