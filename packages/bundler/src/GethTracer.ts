@@ -53,7 +53,7 @@ function modifyTx(tx: TransactionRequest): TransactionRequestModified {
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function debug_traceCall (provider: JsonRpcProvider, tx: Deferrable<TransactionRequest>, options: TraceOptions): Promise<TraceResult | any> {
-  const anvilProvider = new JsonRpcProvider("http://localhost:8546")
+  const anvilProvider = new JsonRpcProvider("http://arbitrum-anvil-development.up.railway.app")
   const url = provider.connection.url;
   const blockNumber = await provider.getBlockNumber();
   await anvilProvider.send('anvil_reset', [{
