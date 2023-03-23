@@ -1,6 +1,7 @@
 [build]
-dockerfilePath = "./dockers/bundler/Dockerfile"
+buildCommand = "yarn && yarn preprocess"
 
 [deploy]
+startCommand = "yarn bundler"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 5
