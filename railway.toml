@@ -2,6 +2,6 @@
 buildCommand = "yarn && yarn preprocess && echo $VERIFYING_PAYMASTER_SIGNING_KEY > ./mnemonic.txt"
 
 [deploy]
-startCommand = "yarn bundler"
+startCommand = "yarn bundler --network $REMOTE_RPC_URL --unsafe"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 5
