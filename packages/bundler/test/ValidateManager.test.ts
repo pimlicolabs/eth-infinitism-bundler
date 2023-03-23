@@ -280,6 +280,11 @@ describe('#ValidationManager', () => {
     // await pm.addStake(entryPoint.address, { value: parseEther('0.1') })
     const acct = await new TestRecursionAccount__factory(ethersSigner).deploy(entryPoint.address)
 
+    await provider.send(
+      'hardhat_mine',
+      []
+    )
+
     const userOp = {
       ...cEmptyUserOp,
       sender: acct.address,
@@ -301,6 +306,10 @@ describe('#ValidationManager', () => {
       signature: hexlify(Buffer.from('handleOps')),
       preVerificationGas: 50000
     }
+    await provider.send(
+      'hardhat_mine',
+      []
+    )
     expect(
       await vm.validateUserOp(op)
         .catch(e => e.message)
