@@ -1,5 +1,5 @@
 [build]
-buildCommand = "yarn && yarn preprocess"
+buildCommand = "yarn && yarn preprocess && echo $VERIFYING_PAYMASTER_SIGNING_KEY > ./mnemonic.txt"
 
 [deploy]
 startCommand = "yarn bundler"
