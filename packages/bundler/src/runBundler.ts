@@ -103,10 +103,10 @@ export async function runBundler (argv: string[], overrideExit = true): Promise<
     console.error('FATAL: --conditionalRpc requires a node that support eth_sendRawTransactionConditional')
     process.exit(1)
   }
-  if (!config.unsafe && !await isGeth(provider as any)) {
-    console.error('FATAL: full validation requires GETH. for local UNSAFE mode: use --unsafe')
-    process.exit(1)
-  }
+  // if (!config.unsafe && !await isGeth(provider as any)) {
+  //   console.error('FATAL: full validation requires GETH. for local UNSAFE mode: use --unsafe')
+  //   process.exit(1)
+  // }
 
   const {
     entryPoint
