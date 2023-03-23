@@ -43,7 +43,7 @@ export interface MethodInfo {
 }
 
 export interface ExitInfo {
-  type: 'REVERT' | 'RETURN'
+  type: 'REVERT' | 'RETURN' | 'STOP'
   gasUsed: number
   data: string
 }

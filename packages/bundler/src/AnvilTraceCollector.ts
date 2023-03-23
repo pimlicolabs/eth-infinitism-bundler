@@ -106,7 +106,7 @@ export class EVMTracer {
             this.calls.push({
                 type: opcode,
                 gasUsed: 0,
-                data :''
+                data: ''
             })
             this.addrs.pop()
         }
