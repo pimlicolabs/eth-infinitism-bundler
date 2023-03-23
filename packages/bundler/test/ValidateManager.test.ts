@@ -318,7 +318,7 @@ describe('#ValidationManager', () => {
   it('should succeed with inner revert', async () => {
     expect(await testUserOp('inner-revert', undefined, storageFactory.interface.encodeFunctionData('create', [0, '']), storageFactory.address))
   })
-  it.only('should fail with inner oog revert', async () => {
+  it('should fail with inner oog revert', async () => {
     expect(await testUserOp('oog', undefined, storageFactory.interface.encodeFunctionData('create', [0, '']), storageFactory.address)
       .catch(e => e.message)
     ).to.match(/account internally reverts on oog/)
