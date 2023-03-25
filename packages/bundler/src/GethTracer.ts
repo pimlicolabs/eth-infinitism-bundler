@@ -1,8 +1,7 @@
 import { JsonRpcProvider, TransactionRequest } from '@ethersproject/providers'
-import { BigNumber, BigNumberish } from 'ethers'
+import { BigNumber } from 'ethers'
 import { Deferrable } from '@ethersproject/properties'
-import { AccessListish, BytesLike, resolveProperties } from 'ethers/lib/utils'
-import { EVMTracer } from './AnvilTraceCollector'
+import { resolveProperties } from 'ethers/lib/utils'
 // from:https://geth.ethereum.org/docs/rpc/ns-debug#javascript-based-tracing
 //
 
@@ -15,67 +14,16 @@ import { EVMTracer } from './AnvilTraceCollector'
  */
 type LogTracerFunc = () => LogTracer
 
-export interface TransactionRequestModified {
-  to?: string,
-  from?: string,
-  nonce?: BigNumberish,
-
-  gas?: BigNumberish,
-  gasPrice?: BigNumberish,
-
-  data?: BytesLike,
-  value?: BigNumberish,
-  chainId?: number
-
-  type?: number;
-  accessList?: AccessListish;
-
-  maxPriorityFeePerGas?: BigNumberish;
-  maxFeePerGas?: BigNumberish;
-}
-
-function modifyTx(tx: TransactionRequest): TransactionRequestModified {
-  return {
-    to: tx.to,
-    from: tx.from,
-    data: tx.data,
-    nonce: tx.nonce?.toString(),
-    gas: tx.gasLimit?.toString(),
-    gasPrice: tx.gasPrice?.toString(),
-    value: tx.value?.toString(),
-    chainId: tx.chainId,
-    type: tx.type,
-    accessList: tx.accessList,
-    maxPriorityFeePerGas: tx.maxPriorityFeePerGas?.toString(),
-    maxFeePerGas: tx.maxFeePerGas?.toString(),
-  }
-}
-
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function debug_traceCall (provider: JsonRpcProvider, tx: Deferrable<TransactionRequest>, options: TraceOptions): Promise<TraceResult | any> {
-  const anvilProvider = new JsonRpcProvider(process.env.ANVIL_URL)
-  const url = provider.connection.url;
-  const blockNumber = await provider.getBlockNumber();
-  await anvilProvider.send('anvil_reset', [{
-    forking: {
-      jsonRpcUrl: url,
-      blockNumber: blockNumber,
-    }  
-  }])
-  const tx1 = modifyTx(await resolveProperties(tx));
-  const ret = await anvilProvider.send('debug_traceCall', [tx1, 'latest', {
-    enableMemory: true,
-    disableStack: false,
-    disableStorage: false,
-  }]).catch(e => {
-    console.log(e)
+  const tx1 = await resolveProperties(tx)
+  const traceOptions = tracer2string(options)
+  const ret = await provider.send('debug_traceCall', [tx1, 'latest', traceOptions]).catch(e => {
     console.log('ex=', e.message)
+    console.log('tracer=', traceOptions.tracer?.toString().split('\n').map((line, index) => `${index + 1}: ${line}`).join('\n'))
     throw e
   })
-  const tracer = new EVMTracer();
-  const result = tracer.processRPCResponse(tx1, ret);
-  // return applyTracer(ret, options)
-  return result
+  return ret
 }
 
 // a hack for network that doesn't have traceCall: mine the transaction, and use debug_traceTransaction

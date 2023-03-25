@@ -66,7 +66,7 @@ function parseCallStack (tracerResults: BundlerCollectorReturn): CallEntry[] {
   tracerResults.calls
     .filter(x => !x.type.startsWith('depth'))
     .forEach(c => {
-      if (c.type.match(/REVERT|RETURN|STOP/) != null) {
+      if (c.type.match(/REVERT|RETURN/) != null) {
         const top = stack.splice(-1)[0] ?? {
           type: 'top',
           method: 'validateUserOp'
@@ -92,23 +92,13 @@ function parseCallStack (tracerResults: BundlerCollectorReturn): CallEntry[] {
               value: top.value,
               revert: parsedError
             })
-          } else if(c.type === "STOP"){
-            const ret = callCatch(() => xfaces.decodeFunctionResult(method, returnData), returnData)
-            out.push({
-              to: top.to,
-              from: top.from,
-              type: top.type,
-              method: '0x',
-              value: top.value,
-              return: ret
-            })
           } else {
             const ret = callCatch(() => xfaces.decodeFunctionResult(method, returnData), returnData)
             out.push({
               to: top.to,
               from: top.from,
               type: top.type,
-              method: method.name ,
+              method: method.name ?? method ,
               return: ret
             })
           }
@@ -187,7 +177,7 @@ export function parseScannerResult (userOp: UserOperation, tracerResults: Bundle
   }
   const callStack = parseCallStack(tracerResults)
   const callInfoEntryPoint = callStack.find(call => 
-    call.to === entryPointAddress.toLowerCase() && call.from.toLowerCase() !== entryPointAddress.toLowerCase() &&
+    call.to === entryPointAddress && call.from !== entryPointAddress &&
     (call.method !== '0x' && call.method !== 'depositTo'))
   requireCond(callInfoEntryPoint == null,
     `illegal call into EntryPoint during validation ${callInfoEntryPoint?.method}`,
@@ -233,11 +223,11 @@ export function parseScannerResult (userOp: UserOperation, tracerResults: Bundle
       writes
     }]) => {
       // testing read/write access on contract "addr"
-      if (addr.toLowerCase() === sender.toLowerCase()) {
+      if (addr === sender) {
         // allowed to access sender's storage
         return
       }
-      if (addr.toLowerCase() === entryPointAddress.toLowerCase()) {
+      if (addr === entryPointAddress) {
         // ignore storage access on entryPoint (balance/deposit of entities.
         // we block them on method calls: only allowed to deposit, never to read
         return

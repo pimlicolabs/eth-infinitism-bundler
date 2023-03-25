@@ -8,7 +8,7 @@ import { BytesLike } from 'ethers'
 const provider = ethers.provider
 const signer = provider.getSigner()
 
-describe.skip('#bundlerCollectorTracer', () => {
+describe('#bundlerCollectorTracer', () => {
   let tester: TracerTest
   before(async function () {
     const ver: string = await (provider as any).send('web3_clientVersion')
