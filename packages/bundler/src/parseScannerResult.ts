@@ -318,7 +318,7 @@ export function parseScannerResult (userOp: UserOperation, tracerResults: Bundle
       if (entStakes == null) {
         throw new Error(`internal: ${entityTitle} not in userOp, but has storage accesses in ${JSON.stringify(access)}`)
       }
-      requireCond(BigNumber.from(1).lt(entStakes.stake) && BigNumber.from(1).lt(entStakes.unstakeDelaySec),
+      requireCond(BigNumber.from(1).lte(entStakes.stake) && BigNumber.from(1).lte(entStakes.unstakeDelaySec),
         failureMessage, ValidationErrors.OpcodeValidation, { [entityTitle]: entStakes?.addr })
 
       // TODO: check real minimum stake values
