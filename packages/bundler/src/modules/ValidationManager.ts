@@ -150,7 +150,7 @@ export class ValidationManager {
       return [errorResult, tracerResult]
     } catch (e: any) {
       // if already parsed, throw as is
-      if (e.code != null) {
+      if (e.code !== "INVALID_ARGUMENT" && e.code != null) {
         throw e
       }
       // not a known error of EntryPoint (probably, only Error(string), since FailedOp is handled above)
