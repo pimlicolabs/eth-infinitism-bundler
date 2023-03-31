@@ -150,12 +150,14 @@ export class ValidationManager {
       return [errorResult, tracerResult]
     } catch (e: any) {
       // if already parsed, throw as is
+      console.log("AAAA");
       if (e.code !== "INVALID_ARGUMENT" && e.code != null) {
         throw e
       }
       // not a known error of EntryPoint (probably, only Error(string), since FailedOp is handled above)
       const err = decodeErrorReason(data)
-      throw new RpcError(err != null ? err.message : data, 111)
+      const errCode = err && err.message.startsWith("AA") ? -32500 : 111
+      throw new RpcError(err != null ? err.message : data, errCode)
     }
   }
 
