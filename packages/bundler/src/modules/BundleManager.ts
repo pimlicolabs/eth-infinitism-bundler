@@ -78,10 +78,16 @@ export class BundleManager {
   async sendBundle (userOps: UserOperation[], beneficiary: string, storageMap: StorageMap): Promise<SendBundleReturn | undefined> {
     try {
       const feeData = await this.provider.getFeeData()
+      const gasLimit = await this.entryPoint.estimateGas.handleOps(userOps, beneficiary, {
+        type: 2,
+        nonce: await this.signer.getTransactionCount(),
+        maxPriorityFeePerGas: feeData.maxPriorityFeePerGas ?? 0,
+        maxFeePerGas: feeData.maxFeePerGas ?? 0
+      });
       const tx = await this.entryPoint.populateTransaction.handleOps(userOps, beneficiary, {
         type: 2,
         nonce: await this.signer.getTransactionCount(),
-        gasLimit: 10e6,
+        gasLimit: gasLimit.mul(12).div(10),
         maxPriorityFeePerGas: feeData.maxPriorityFeePerGas ?? 0,
         maxFeePerGas: feeData.maxFeePerGas ?? 0
       })

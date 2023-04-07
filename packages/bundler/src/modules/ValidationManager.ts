@@ -150,7 +150,6 @@ export class ValidationManager {
       return [errorResult, tracerResult]
     } catch (e: any) {
       // if already parsed, throw as is
-      console.log("AAAA");
       if (e.code !== "INVALID_ARGUMENT" && e.code != null) {
         throw e
       }
