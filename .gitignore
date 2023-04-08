@@ -1,4 +1,5 @@
 node_modules
+mnemonic.txt
 .env
 coverage
 coverage.json

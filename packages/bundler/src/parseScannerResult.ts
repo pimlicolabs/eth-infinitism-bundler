@@ -108,7 +108,9 @@ function parseCallStack (tracerResults: BundlerCollectorReturn): CallEntry[] {
       }
     })
 
-  // TODO: verify that stack is empty at the end.
+  if(stack.length != 0) {
+    throw Error('stack not empty at the end')
+  }
 
   return out
 }
