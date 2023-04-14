@@ -18,11 +18,14 @@ type LogTracerFunc = () => LogTracer
 export async function debug_traceCall (provider: JsonRpcProvider, tx: Deferrable<TransactionRequest>, options: TraceOptions): Promise<TraceResult | any> {
   const tx1 = await resolveProperties(tx)
   const traceOptions = tracer2string(options)
+  const startTime = Date.now()
   const ret = await provider.send('debug_traceCall', [tx1, 'latest', traceOptions]).catch(e => {
     console.log('ex=', e.message)
     console.log('tracer=', traceOptions.tracer?.toString().split('\n').map((line, index) => `${index + 1}: ${line}`).join('\n'))
     throw e
   })
+  const endTime = Date.now()
+  console.log('traceCall took', endTime - startTime, 'ms')
   return ret
 }
 
